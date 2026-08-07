@@ -1,0 +1,28 @@
+<%- include('partials/header') %>
+<section class="page-header">
+  <div>
+    <h2>Settings</h2>
+    <p>Kiểm tra nhanh cấu hình môi trường hiện tại.</p>
+  </div>
+</section>
+
+<section class="grid two-columns">
+  <article class="card">
+    <h3>Cấu hình</h3>
+    <div class="stack">
+      <div class="setting-row"><span>PORT</span><strong><%= settings.port %></strong></div>
+      <div class="setting-row"><span>DATABASE_URL</span><strong><%= settings.hasDatabaseUrl ? 'Đã cấu hình' : 'Thiếu' %></strong></div>
+      <div class="setting-row"><span>DATABASE_SSL</span><strong><%= settings.databaseSsl %></strong></div>
+      <div class="setting-row"><span>BOT_TOKEN</span><strong><%= settings.hasBotToken ? 'Đã cấu hình' : 'Thiếu' %></strong></div>
+      <div class="setting-row"><span>ADMIN_USERNAME</span><strong><%= settings.adminUsername %></strong></div>
+    </div>
+  </article>
+
+  <article class="card">
+    <h3>Database health</h3>
+    <p>Trạng thái: <strong><%= health.connected ? 'Connected' : 'Disconnected' %></strong></p>
+    <p><%= health.message %></p>
+    <p>Mở <code>/health</code> để kiểm tra máy chủ sau khi deploy.</p>
+  </article>
+</section>
+<%- include('partials/footer') %>

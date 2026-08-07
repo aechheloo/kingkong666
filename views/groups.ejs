@@ -1,0 +1,47 @@
+<%- include('partials/header') %>
+<section class="page-header">
+  <div>
+    <h2>Nhóm</h2>
+    <p>Tạo và quản lý Telegram chat cho từng nhóm.</p>
+  </div>
+</section>
+
+<section class="grid two-columns">
+  <article class="card">
+    <h3>Tạo nhóm mới</h3>
+    <form method="post" action="/admin/groups" class="stack">
+      <label>
+        Tên nhóm
+        <input type="text" name="name" placeholder="VD: Nhóm Hà Nội" required />
+      </label>
+      <label>
+        Telegram Chat ID
+        <input type="text" name="telegram_chat_id" placeholder="-100xxxxxxxxxx" />
+      </label>
+      <button class="button" type="submit">Tạo nhóm</button>
+    </form>
+  </article>
+
+  <article class="card">
+    <h3>Danh sách nhóm</h3>
+    <% if (!groups.length) { %>
+      <p>Chưa có nhóm nào.</p>
+    <% } else { %>
+      <div class="list">
+        <% groups.forEach((group) => { %>
+          <a class="list-item" href="/admin/groups/<%= group.id %>">
+            <div>
+              <strong><%= group.name %></strong>
+              <small>Chat ID: <%= group.telegram_chat_id || 'chưa cấu hình' %></small>
+            </div>
+            <div class="meta">
+              <span><%= group.employee_count %> NV</span>
+              <span><%= formatCurrency(Number(group.total_income || 0) - Number(group.total_expense || 0)) %></span>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+  </article>
+</section>
+<%- include('partials/footer') %>

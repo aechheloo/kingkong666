@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= pageTitle %> - Thu Chi Luong</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Thu Chi Luong Admin</h1>
+      <p>Quản lý thu chi, lương và chốt số liệu</p>
+    </div>
+    <nav>
+      <a href="/admin/dashboard">Dashboard</a>
+      <a href="/admin/groups">Nhóm</a>
+      <a href="/admin/settings">Settings</a>
+    </nav>
+  </header>
+  <main class="container">
+    <% if (feedback?.success) { %>
+      <div class="alert success"><%= feedback.success %></div>
+    <% } %>
+    <% if (feedback?.error) { %>
+      <div class="alert error"><%= feedback.error %></div>
+    <% } %>
