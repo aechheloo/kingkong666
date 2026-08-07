@@ -1,27 +1,284 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><%= pageTitle %> - Thu Chi Luong</title>
-  <link rel="stylesheet" href="/style.css" />
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta name="theme-color" content="#08111f">
+
+  <title>
+    <%= typeof pageTitle !== "undefined" && pageTitle
+      ? pageTitle
+      : "Thu Chi Lương Admin" %>
+  </title>
+
+  <link rel="stylesheet" href="/style.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      background: #f4f7fb;
+      color: #111827;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+    }
+
+    .topbar {
+      width: 100%;
+      padding:
+        calc(16px + env(safe-area-inset-top))
+        15px
+        14px;
+      background:
+        radial-gradient(
+          circle at 90% 0%,
+          rgba(34, 197, 94, 0.16),
+          transparent 34%
+        ),
+        linear-gradient(145deg, #08111f, #101d30);
+      color: #ffffff;
+      box-shadow: 0 8px 25px rgba(2, 8, 23, 0.2);
+    }
+
+    .topbar-inner {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      display: grid;
+      width: 46px;
+      height: 46px;
+      flex: 0 0 46px;
+      place-items: center;
+      border-radius: 14px;
+      background: linear-gradient(145deg, #22c55e, #15803d);
+      font-size: 23px;
+      box-shadow: 0 9px 22px rgba(22, 163, 74, 0.28);
+    }
+
+    .brand-text {
+      min-width: 0;
+    }
+
+    .brand-text h1 {
+      margin: 0;
+      overflow: hidden;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .brand-text p {
+      margin: 5px 0 0;
+      overflow: hidden;
+      color: #aeb8c7;
+      font-size: 12px;
+      line-height: 1.4;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .topbar nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 15px;
+      padding-top: 12px;
+      overflow-x: auto;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      scrollbar-width: none;
+    }
+
+    .topbar nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .nav-link {
+      display: inline-flex;
+      min-height: 41px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 13px;
+      border-radius: 12px;
+      color: #d5dce7;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .nav-link.active {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(22, 163, 74, 0.22);
+    }
+
+    .container {
+      width: 100%;
+      min-height: calc(100vh - 145px);
+      margin: 0;
+      padding: 0;
+    }
+
+    .alert {
+      width: calc(100% - 28px);
+      max-width: 1150px;
+      margin: 15px auto 0;
+      padding: 13px 15px;
+      border-radius: 13px;
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.5;
+    }
+
+    .alert.success {
+      border: 1px solid rgba(22, 163, 74, 0.2);
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .alert.error {
+      border: 1px solid rgba(220, 38, 38, 0.2);
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    @media (min-width: 621px) {
+      .topbar {
+        padding: 20px;
+      }
+
+      .brand-logo {
+        width: 52px;
+        height: 52px;
+        flex-basis: 52px;
+      }
+
+      .brand-text h1 {
+        font-size: 26px;
+      }
+
+      .brand-text p {
+        font-size: 14px;
+      }
+
+      .nav-link {
+        padding: 0 16px;
+        font-size: 14px;
+      }
+    }
+  </style>
 </head>
+
 <body>
   <header class="topbar">
-    <div>
-      <h1>Thu Chi Luong Admin</h1>
-      <p>Quản lý thu chi, lương và chốt số liệu</p>
+    <div class="topbar-inner">
+      <div class="brand-row">
+        <div class="brand-logo">📊</div>
+
+        <div class="brand-text">
+          <h1>Thu Chi Lương Admin</h1>
+          <p>Quản lý thu chi, lương và chốt số liệu</p>
+        </div>
+      </div>
+
+      <nav aria-label="Điều hướng quản trị">
+        <a
+          class="nav-link"
+          href="/admin/dashboard"
+          data-nav="/admin/dashboard"
+        >
+          <span>⌂</span>
+          <span>Dashboard</span>
+        </a>
+
+        <a
+          class="nav-link"
+          href="/admin/groups"
+          data-nav="/admin/groups"
+        >
+          <span>👥</span>
+          <span>Nhóm</span>
+        </a>
+
+        <a
+          class="nav-link"
+          href="/admin/settings"
+          data-nav="/admin/settings"
+        >
+          <span>⚙</span>
+          <span>Settings</span>
+        </a>
+      </nav>
     </div>
-    <nav>
-      <a href="/admin/dashboard">Dashboard</a>
-      <a href="/admin/groups">Nhóm</a>
-      <a href="/admin/settings">Settings</a>
-    </nav>
   </header>
+
   <main class="container">
-    <% if (feedback?.success) { %>
-      <div class="alert success"><%= feedback.success %></div>
+    <% if (
+      typeof feedback !== "undefined" &&
+      feedback &&
+      feedback.success
+    ) { %>
+      <div class="alert success">
+        ✓ <%= feedback.success %>
+      </div>
     <% } %>
-    <% if (feedback?.error) { %>
-      <div class="alert error"><%= feedback.error %></div>
+
+    <% if (
+      typeof feedback !== "undefined" &&
+      feedback &&
+      feedback.error
+    ) { %>
+      <div class="alert error">
+        ! <%= feedback.error %>
+      </div>
     <% } %>
+
+    <script>
+      (() => {
+        const currentPath = window.location.pathname;
+
+        document.querySelectorAll("[data-nav]").forEach((link) => {
+          const path = link.getAttribute("data-nav");
+
+          const active =
+            currentPath === path ||
+            currentPath.startsWith(path + "/");
+
+          link.classList.toggle("active", active);
+        });
+      })();
+    </script>
