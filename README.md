@@ -30,13 +30,17 @@ kingkong666/
 │   ├── style.css
 │   └── app.js
 ├── views/
+│   ├── partials/
+│   │   ├── header.ejs
+│   │   └── footer.ejs
 │   ├── dashboard.ejs
 │   ├── groups.ejs
 │   ├── group-detail.ejs
 │   ├── transactions.ejs
 │   ├── employees.ejs
 │   ├── salary.ejs
-│   └── settings.ejs
+│   ├── settings.ejs
+│   └── error.ejs
 └── src/
     ├── bot/
     │   ├── telegram.js
@@ -46,7 +50,8 @@ kingkong666/
     ├── database/
     │   └── init.js
     ├── middleware/
-    │   └── adminAuth.js
+    │   ├── adminAuth.js
+    │   └── rateLimit.js
     ├── services/
     │   ├── groupService.js
     │   ├── transactionService.js
@@ -87,13 +92,21 @@ BOT_TOKEN=your_telegram_bot_token
 
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your_strong_password
+
+# Tuỳ chọn – giới hạn request tới trang admin (mặc định: 60 req/phút)
+ADMIN_RATE_LIMIT_WINDOW_MS=60000
+ADMIN_RATE_LIMIT_MAX=60
 ```
 
-Bản hiện tại yêu cầu đủ:
+Bắt buộc:
 - `DATABASE_URL`
 - `BOT_TOKEN`
 - `ADMIN_USERNAME`
 - `ADMIN_PASSWORD`
+
+Tuỳ chọn:
+- `ADMIN_RATE_LIMIT_WINDOW_MS` – cửa sổ thời gian rate limit (ms, mặc định: `60000`)
+- `ADMIN_RATE_LIMIT_MAX` – số request tối đa trong cửa sổ đó (mặc định: `60`)
 
 ---
 
