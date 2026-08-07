@@ -1,5 +1,5 @@
 const { query, withTransaction } = require('../config/database');
-const { parseAmount } = require('../utils/format');
+const { parseAmount, toDateInputValue, toMonthInputValue } = require('../utils/format');
 const { getEmployeeById } = require('./employeeService');
 
 async function addSalaryEntry(employeeId, { amount, workDate, note }) {
@@ -93,7 +93,7 @@ async function getSalaryOverview(employeeId) {
 
 async function closeSalaryDay(employeeId, { closingDate, note }) {
   const employee = await getEmployeeById(employeeId);
-  const date = closingDate || new Date().toISOString().slice(0, 10);
+  const date = closingDate || toDateInputValue();
 
   return withTransaction(async (client) => {
     const totalsResult = await client.query(
@@ -129,7 +129,7 @@ async function closeSalaryDay(employeeId, { closingDate, note }) {
 
 async function closeSalaryMonth(employeeId, { closingMonth, note }) {
   const employee = await getEmployeeById(employeeId);
-  const month = closingMonth || new Date().toISOString().slice(0, 7);
+  const month = closingMonth || toMonthInputValue();
 
   return withTransaction(async (client) => {
     const totalsResult = await client.query(

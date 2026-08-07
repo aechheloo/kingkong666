@@ -37,13 +37,17 @@ function formatMonth(value) {
   return `${month}/${year}`;
 }
 
+function pad(number) {
+  return String(number).padStart(2, '0');
+}
+
 function toDateInputValue(value = new Date()) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return '';
   }
 
-  return date.toISOString().slice(0, 10);
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 function toMonthInputValue(value = new Date()) {
@@ -52,7 +56,7 @@ function toMonthInputValue(value = new Date()) {
     return '';
   }
 
-  return date.toISOString().slice(0, 7);
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 }
 
 function parseAmount(value) {

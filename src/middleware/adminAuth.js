@@ -1,14 +1,16 @@
+const { timingSafeEqual } = require('crypto');
+
 function safeCompare(left = '', right = '') {
-  if (left.length !== right.length) {
-    return false;
-  }
+  const leftBuffer = Buffer.from(String(left));
+  const rightBuffer = Buffer.from(String(right));
+  const length = Math.max(leftBuffer.length, rightBuffer.length, 1);
+  const paddedLeft = Buffer.alloc(length);
+  const paddedRight = Buffer.alloc(length);
 
-  let mismatch = 0;
-  for (let index = 0; index < left.length; index += 1) {
-    mismatch |= left.charCodeAt(index) ^ right.charCodeAt(index);
-  }
+  leftBuffer.copy(paddedLeft);
+  rightBuffer.copy(paddedRight);
 
-  return mismatch === 0;
+  return timingSafeEqual(paddedLeft, paddedRight) && leftBuffer.length === rightBuffer.length;
 }
 
 function parseBasicAuth(header = '') {

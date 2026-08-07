@@ -1,9 +1,10 @@
 const { withTransaction } = require('../config/database');
 const { getGroupById } = require('./groupService');
+const { toDateInputValue, toMonthInputValue } = require('../utils/format');
 
 async function closeExpenseDay(groupId, { closingDate, note }) {
   const group = await getGroupById(groupId);
-  const date = closingDate || new Date().toISOString().slice(0, 10);
+  const date = closingDate || toDateInputValue();
 
   return withTransaction(async (client) => {
     const totalsResult = await client.query(
@@ -38,7 +39,7 @@ async function closeExpenseDay(groupId, { closingDate, note }) {
 
 async function closeExpenseMonth(groupId, { closingMonth, note }) {
   const group = await getGroupById(groupId);
-  const month = closingMonth || new Date().toISOString().slice(0, 7);
+  const month = closingMonth || toMonthInputValue();
 
   return withTransaction(async (client) => {
     const totalsResult = await client.query(
