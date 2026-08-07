@@ -1,68 +1,900 @@
 <%- include('partials/header') %>
-<section class="page-header">
-  <div>
-    <h2>Tổng quan</h2>
-    <p>Theo dõi nhanh toàn bộ hệ thống.</p>
-  </div>
-  <a class="button secondary" href="/admin/groups">Quản lý nhóm</a>
-</section>
 
-<section class="grid cards">
-  <article class="card stat-card">
-    <span>Nhóm</span>
-    <strong><%= stats.groupCount %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Nhân viên</span>
-    <strong><%= stats.employeeCount %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Tổng thu</span>
-    <strong><%= formatCurrency(stats.totalIncome) %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Tổng chi</span>
-    <strong><%= formatCurrency(stats.totalExpense) %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Số dư</span>
-    <strong><%= formatCurrency(stats.balance) %></strong>
-  </article>
-  <article class="card stat-card <%= health.connected ? 'ok' : 'warn' %>">
-    <span>Database</span>
-    <strong><%= health.connected ? 'Connected' : 'Disconnected' %></strong>
-  </article>
-</section>
+<%
+  const recentTransactions = Array.isArray(stats.recentTransactions)
+    ? stats.recentTransactions
+    : [];
+%>
 
-<section class="card">
-  <h3>Giao dịch gần đây</h3>
-  <% if (!stats.recentTransactions.length) { %>
-    <p>Chưa có giao dịch nào.</p>
-  <% } else { %>
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Ngày</th>
-            <th>Nhóm</th>
-            <th>Loại</th>
-            <th>Số tiền</th>
-            <th>Nội dung</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% stats.recentTransactions.forEach((transaction) => { %>
-            <tr>
-              <td><%= formatDate(transaction.transaction_date) %></td>
-              <td><%= transaction.group_name %></td>
-              <td><%= transaction.type === 'income' ? 'Thu' : 'Chi' %></td>
-              <td><%= formatCurrency(transaction.amount) %></td>
-              <td><%= transaction.description %></td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
+<style>
+  :root {
+    --dashboard-green: #16a34a;
+    --dashboard-green-dark: #15803d;
+    --dashboard-green-soft: #dcfce7;
+
+    --dashboard-red: #dc2626;
+    --dashboard-red-soft: #fee2e2;
+
+    --dashboard-orange: #d97706;
+    --dashboard-orange-soft: #fef3c7;
+
+    --dashboard-blue: #2563eb;
+    --dashboard-blue-soft: #dbeafe;
+
+    --dashboard-purple: #7c3aed;
+    --dashboard-purple-soft: #ede9fe;
+
+    --dashboard-text: #111827;
+    --dashboard-muted: #6b7280;
+    --dashboard-border: #e5e7eb;
+    --dashboard-background: #f4f7fb;
+    --dashboard-card: #ffffff;
+  }
+
+  body {
+    background: var(--dashboard-background);
+  }
+
+  .admin-dashboard,
+  .admin-dashboard *,
+  .admin-dashboard *::before,
+  .admin-dashboard *::after {
+    box-sizing: border-box;
+  }
+
+  .admin-dashboard {
+    width: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 22px 18px 42px;
+    color: var(--dashboard-text);
+  }
+
+  /* =========================
+     HERO
+  ========================= */
+
+  .dashboard-hero {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    min-height: 215px;
+    margin-bottom: 18px;
+    padding: 28px;
+    overflow: hidden;
+    border: 1px solid rgba(22, 163, 74, 0.13);
+    border-radius: 25px;
+    background:
+      radial-gradient(
+        circle at 88% 20%,
+        rgba(34, 197, 94, 0.19),
+        transparent 30%
+      ),
+      linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.07);
+  }
+
+  .dashboard-hero::after {
+    content: "";
+    position: absolute;
+    right: -60px;
+    bottom: -80px;
+    width: 230px;
+    height: 230px;
+    border-radius: 50%;
+    background: rgba(34, 197, 94, 0.07);
+  }
+
+  .dashboard-hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 610px;
+  }
+
+  .dashboard-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 15px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: var(--dashboard-green-soft);
+    color: var(--dashboard-green-dark);
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .dashboard-status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.13);
+  }
+
+  .dashboard-hero h2 {
+    margin: 0;
+    font-size: clamp(29px, 5vw, 42px);
+    line-height: 1.12;
+    letter-spacing: -0.045em;
+  }
+
+  .dashboard-hero p {
+    max-width: 560px;
+    margin: 12px 0 0;
+    color: var(--dashboard-muted);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .dashboard-hero-action {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex: 0 0 250px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .dashboard-illustration {
+    display: grid;
+    min-height: 95px;
+    place-items: center;
+    border: 1px solid rgba(22, 163, 74, 0.11);
+    border-radius: 19px;
+    background: rgba(255, 255, 255, 0.68);
+    font-size: 55px;
+    backdrop-filter: blur(5px);
+  }
+
+  .manage-groups-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 49px;
+    padding: 0 18px;
+    border-radius: 15px;
+    background: linear-gradient(
+      135deg,
+      var(--dashboard-green),
+      var(--dashboard-green-dark)
+    );
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 750;
+    text-decoration: none;
+    box-shadow: 0 12px 25px rgba(22, 163, 74, 0.24);
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .manage-groups-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 15px 30px rgba(22, 163, 74, 0.29);
+  }
+
+  /* =========================
+     STATISTICS
+  ========================= */
+
+  .dashboard-statistics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .dashboard-stat-card {
+    position: relative;
+    min-width: 0;
+    min-height: 155px;
+    padding: 20px;
+    overflow: hidden;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 21px;
+    background: var(--dashboard-card);
+    box-shadow: 0 11px 30px rgba(15, 23, 42, 0.055);
+  }
+
+  .dashboard-stat-card::after {
+    content: "";
+    position: absolute;
+    right: -30px;
+    bottom: -42px;
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.025);
+  }
+
+  .dashboard-stat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 23px;
+  }
+
+  .dashboard-stat-title {
+    color: var(--dashboard-muted);
+    font-size: 14px;
+    font-weight: 650;
+  }
+
+  .dashboard-stat-icon {
+    display: grid;
+    width: 43px;
+    height: 43px;
+    flex: 0 0 43px;
+    place-items: center;
+    border-radius: 14px;
+    font-size: 20px;
+  }
+
+  .dashboard-stat-icon.groups {
+    background: var(--dashboard-green-soft);
+  }
+
+  .dashboard-stat-icon.employees {
+    background: var(--dashboard-purple-soft);
+  }
+
+  .dashboard-stat-icon.income {
+    background: var(--dashboard-green-soft);
+    color: var(--dashboard-green-dark);
+  }
+
+  .dashboard-stat-icon.expense {
+    background: var(--dashboard-red-soft);
+    color: var(--dashboard-red);
+  }
+
+  .dashboard-stat-icon.balance {
+    background: var(--dashboard-orange-soft);
+    color: var(--dashboard-orange);
+  }
+
+  .dashboard-stat-icon.database {
+    background: var(--dashboard-blue-soft);
+    color: var(--dashboard-blue);
+  }
+
+  .dashboard-stat-value {
+    position: relative;
+    z-index: 1;
+    display: block;
+    margin: 0;
+    color: var(--dashboard-text);
+    font-size: clamp(27px, 4vw, 35px);
+    font-weight: 850;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-stat-value.income {
+    color: var(--dashboard-green-dark);
+  }
+
+  .dashboard-stat-value.expense {
+    color: var(--dashboard-red);
+  }
+
+  .dashboard-stat-value.balance {
+    color: var(--dashboard-orange);
+  }
+
+  .dashboard-stat-note {
+    position: relative;
+    z-index: 1;
+    display: block;
+    margin-top: 11px;
+    color: var(--dashboard-muted);
+    font-size: 13px;
+  }
+
+  .dashboard-stat-card.database-connected {
+    border-color: rgba(22, 163, 74, 0.25);
+    background: linear-gradient(145deg, #ffffff, #f0fdf4);
+  }
+
+  .dashboard-stat-card.database-disconnected {
+    border-color: rgba(220, 38, 38, 0.24);
+    background: linear-gradient(145deg, #ffffff, #fff1f2);
+  }
+
+  .database-value {
+    display: flex;
+    position: relative;
+    z-index: 1;
+    align-items: center;
+    gap: 10px;
+    color: var(--dashboard-green-dark);
+    font-size: 22px;
+    font-weight: 850;
+  }
+
+  .database-value.disconnected {
+    color: var(--dashboard-red);
+  }
+
+  .database-value-dot {
+    width: 11px;
+    height: 11px;
+    flex: 0 0 11px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.13);
+  }
+
+  .database-value.disconnected .database-value-dot {
+    background: var(--dashboard-red);
+    box-shadow: 0 0 0 5px rgba(220, 38, 38, 0.11);
+  }
+
+  /* =========================
+     RECENT TRANSACTIONS
+  ========================= */
+
+  .recent-transactions-card {
+    overflow: hidden;
+    border: 1px solid var(--dashboard-border);
+    border-radius: 23px;
+    background: var(--dashboard-card);
+    box-shadow: 0 14px 36px rgba(15, 23, 42, 0.055);
+  }
+
+  .recent-transactions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 21px 23px;
+    border-bottom: 1px solid var(--dashboard-border);
+  }
+
+  .recent-transactions-title {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+
+  .recent-transactions-title-icon {
+    display: grid;
+    width: 41px;
+    height: 41px;
+    place-items: center;
+    border-radius: 13px;
+    background: var(--dashboard-green-soft);
+    font-size: 19px;
+  }
+
+  .recent-transactions-header h3 {
+    margin: 0;
+    font-size: 20px;
+    letter-spacing: -0.025em;
+  }
+
+  .recent-transactions-count {
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: #f3f4f6;
+    color: var(--dashboard-muted);
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .transactions-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .transactions-table {
+    width: 100%;
+    min-width: 780px;
+    border-collapse: collapse;
+  }
+
+  .transactions-table th,
+  .transactions-table td {
+    padding: 16px 19px;
+    border-bottom: 1px solid #eef1f4;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .transactions-table th {
+    background: #fafbfc;
+    color: var(--dashboard-muted);
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+  }
+
+  .transactions-table td {
+    color: #374151;
+    font-size: 14px;
+  }
+
+  .transactions-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .transaction-group {
+    color: var(--dashboard-text);
+    font-weight: 700;
+  }
+
+  .transaction-type {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 54px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .transaction-type.income {
+    background: var(--dashboard-green-soft);
+    color: var(--dashboard-green-dark);
+  }
+
+  .transaction-type.expense {
+    background: var(--dashboard-red-soft);
+    color: var(--dashboard-red);
+  }
+
+  .transaction-amount {
+    color: var(--dashboard-text);
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .transaction-description {
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* =========================
+     EMPTY STATE
+  ========================= */
+
+  .transactions-empty {
+    display: grid;
+    min-height: 250px;
+    padding: 35px 22px;
+    place-items: center;
+    text-align: center;
+  }
+
+  .transactions-empty-icon {
+    display: grid;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 16px;
+    place-items: center;
+    border-radius: 22px;
+    background: var(--dashboard-green-soft);
+    font-size: 32px;
+  }
+
+  .transactions-empty h4 {
+    margin: 0 0 8px;
+    font-size: 18px;
+  }
+
+  .transactions-empty p {
+    margin: 0;
+    color: var(--dashboard-muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  /* =========================
+     MOBILE TRANSACTION CARDS
+  ========================= */
+
+  .mobile-transactions {
+    display: none;
+    padding: 12px;
+  }
+
+  .mobile-transaction {
+    padding: 16px;
+    border-bottom: 1px solid #eef1f4;
+  }
+
+  .mobile-transaction:last-child {
+    border-bottom: 0;
+  }
+
+  .mobile-transaction-top,
+  .mobile-transaction-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .mobile-transaction-group {
+    color: var(--dashboard-text);
+    font-size: 14px;
+    font-weight: 750;
+  }
+
+  .mobile-transaction-description {
+    margin: 9px 0;
+    color: var(--dashboard-muted);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .mobile-transaction-date {
+    color: var(--dashboard-muted);
+    font-size: 12px;
+  }
+
+  .mobile-transaction-amount {
+    font-size: 14px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  /* =========================
+     RESPONSIVE
+  ========================= */
+
+  @media (max-width: 850px) {
+    .dashboard-statistics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 620px) {
+    .admin-dashboard {
+      padding: 15px 13px 35px;
+    }
+
+    .dashboard-hero {
+      display: block;
+      min-height: auto;
+      padding: 20px;
+      border-radius: 21px;
+    }
+
+    .dashboard-hero h2 {
+      font-size: 29px;
+    }
+
+    .dashboard-hero p {
+      font-size: 14px;
+    }
+
+    .dashboard-hero-action {
+      display: block;
+      margin-top: 20px;
+    }
+
+    .dashboard-illustration {
+      display: none;
+    }
+
+    .manage-groups-button {
+      width: 100%;
+    }
+
+    .dashboard-statistics {
+      gap: 11px;
+    }
+
+    .dashboard-stat-card {
+      min-height: 142px;
+      padding: 16px;
+      border-radius: 18px;
+    }
+
+    .dashboard-stat-header {
+      margin-bottom: 18px;
+    }
+
+    .dashboard-stat-icon {
+      width: 39px;
+      height: 39px;
+      flex-basis: 39px;
+      border-radius: 12px;
+      font-size: 18px;
+    }
+
+    .dashboard-stat-title {
+      font-size: 13px;
+    }
+
+    .dashboard-stat-value {
+      font-size: 25px;
+    }
+
+    .dashboard-stat-note {
+      margin-top: 8px;
+      font-size: 12px;
+    }
+
+    .database-value {
+      font-size: 17px;
+    }
+
+    .recent-transactions-card {
+      border-radius: 20px;
+    }
+
+    .recent-transactions-header {
+      padding: 17px;
+    }
+
+    .recent-transactions-title-icon {
+      width: 37px;
+      height: 37px;
+      border-radius: 11px;
+    }
+
+    .recent-transactions-header h3 {
+      font-size: 17px;
+    }
+
+    .transactions-table-wrapper {
+      display: none;
+    }
+
+    .mobile-transactions {
+      display: block;
+    }
+  }
+
+  @media (max-width: 370px) {
+    .dashboard-statistics {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<main class="admin-dashboard">
+  <section class="dashboard-hero">
+    <div class="dashboard-hero-content">
+      <div class="dashboard-status">
+        <span class="dashboard-status-dot"></span>
+        Hệ thống đang hoạt động
+      </div>
+
+      <h2>Tổng quan hôm nay</h2>
+
+      <p>
+        Theo dõi nhóm, nhân viên, tổng thu, tổng chi và số dư của toàn bộ hệ
+        thống.
+      </p>
     </div>
-  <% } %>
-</section>
+
+    <div class="dashboard-hero-action">
+      <div class="dashboard-illustration">📊</div>
+
+      <a class="manage-groups-button" href="/admin/groups">
+        <span>👥</span>
+        <span>Quản lý nhóm</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="dashboard-statistics">
+    <article class="dashboard-stat-card">
+      <div class="dashboard-stat-header">
+        <span class="dashboard-stat-title">Nhóm</span>
+        <span class="dashboard-stat-icon groups">👥</span>
+      </div>
+
+      <strong class="dashboard-stat-value">
+        <%= stats.groupCount %>
+      </strong>
+
+      <span class="dashboard-stat-note">Tổng số nhóm</span>
+    </article>
+
+    <article class="dashboard-stat-card">
+      <div class="dashboard-stat-header">
+        <span class="dashboard-stat-title">Nhân viên</span>
+        <span class="dashboard-stat-icon employees">👤</span>
+      </div>
+
+      <strong class="dashboard-stat-value">
+        <%= stats.employeeCount %>
+      </strong>
+
+      <span class="dashboard-stat-note">Đang được quản lý</span>
+    </article>
+
+    <article class="dashboard-stat-card">
+      <div class="dashboard-stat-header">
+        <span class="dashboard-stat-title">Tổng thu</span>
+        <span class="dashboard-stat-icon income">↗</span>
+      </div>
+
+      <strong class="dashboard-stat-value income">
+        <%= formatCurrency(stats.totalIncome) %>
+      </strong>
+
+      <span class="dashboard-stat-note">Toàn hệ thống</span>
+    </article>
+
+    <article class="dashboard-stat-card">
+      <div class="dashboard-stat-header">
+        <span class="dashboard-stat-title">Tổng chi</span>
+        <span class="dashboard-stat-icon expense">↘</span>
+      </div>
+
+      <strong class="dashboard-stat-value expense">
+        <%= formatCurrency(stats.totalExpense) %>
+      </strong>
+
+      <span class="dashboard-stat-note">Toàn hệ thống</span>
+    </article>
+
+    <article class="dashboard-stat-card">
+      <div class="dashboard-stat-header">
+        <span class="dashboard-stat-title">Số dư</span>
+        <span class="dashboard-stat-icon balance">₫</span>
+      </div>
+
+      <strong class="dashboard-stat-value balance">
+        <%= formatCurrency(stats.balance) %>
+      </strong>
+
+      <span class="dashboard-stat-note">Cập nhật theo giao dịch</span>
+    </article>
+
+    <article
+      class="dashboard-stat-card
+        <%= health.connected
+          ? 'database-connected'
+          : 'database-disconnected' %>"
+    >
+      <div class="dashboard-stat-header">
+        <span class="dashboard-stat-title">Database</span>
+        <span class="dashboard-stat-icon database">◉</span>
+      </div>
+
+      <div
+        class="database-value
+          <%= health.connected ? '' : 'disconnected' %>"
+      >
+        <span class="database-value-dot"></span>
+
+        <span>
+          <%= health.connected ? 'Đã kết nối' : 'Mất kết nối' %>
+        </span>
+      </div>
+
+      <span class="dashboard-stat-note">
+        <%= health.connected
+          ? 'Trạng thái hoạt động tốt'
+          : 'Cần kiểm tra kết nối' %>
+      </span>
+    </article>
+  </section>
+
+  <section class="recent-transactions-card">
+    <div class="recent-transactions-header">
+      <div class="recent-transactions-title">
+        <span class="recent-transactions-title-icon">🧾</span>
+        <h3>Giao dịch gần đây</h3>
+      </div>
+
+      <span class="recent-transactions-count">
+        <%= recentTransactions.length %> giao dịch
+      </span>
+    </div>
+
+    <% if (!recentTransactions.length) { %>
+      <div class="transactions-empty">
+        <div>
+          <div class="transactions-empty-icon">🧾</div>
+          <h4>Chưa có giao dịch</h4>
+          <p>
+            Các giao dịch thu và chi mới sẽ được hiển thị tại khu vực này.
+          </p>
+        </div>
+      </div>
+    <% } else { %>
+      <div class="transactions-table-wrapper">
+        <table class="transactions-table">
+          <thead>
+            <tr>
+              <th>Ngày</th>
+              <th>Nhóm</th>
+              <th>Loại</th>
+              <th>Số tiền</th>
+              <th>Nội dung</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <% recentTransactions.forEach((transaction) => { %>
+              <tr>
+                <td>
+                  <%= formatDate(transaction.transaction_date) %>
+                </td>
+
+                <td class="transaction-group">
+                  <%= transaction.group_name %>
+                </td>
+
+                <td>
+                  <span
+                    class="transaction-type
+                      <%= transaction.type === 'income'
+                        ? 'income'
+                        : 'expense' %>"
+                  >
+                    <%= transaction.type === 'income' ? 'Thu' : 'Chi' %>
+                  </span>
+                </td>
+
+                <td class="transaction-amount">
+                  <%= formatCurrency(transaction.amount) %>
+                </td>
+
+                <td class="transaction-description">
+                  <%= transaction.description || 'Không có nội dung' %>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mobile-transactions">
+        <% recentTransactions.forEach((transaction) => { %>
+          <article class="mobile-transaction">
+            <div class="mobile-transaction-top">
+              <span class="mobile-transaction-group">
+                <%= transaction.group_name %>
+              </span>
+
+              <span
+                class="transaction-type
+                  <%= transaction.type === 'income'
+                    ? 'income'
+                    : 'expense' %>"
+              >
+                <%= transaction.type === 'income' ? 'Thu' : 'Chi' %>
+              </span>
+            </div>
+
+            <p class="mobile-transaction-description">
+              <%= transaction.description || 'Không có nội dung' %>
+            </p>
+
+            <div class="mobile-transaction-bottom">
+              <span class="mobile-transaction-date">
+                <%= formatDate(transaction.transaction_date) %>
+              </span>
+
+              <strong class="mobile-transaction-amount">
+                <%= formatCurrency(transaction.amount) %>
+              </strong>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</main>
+
 <%- include('partials/footer') %>
