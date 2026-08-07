@@ -1,39 +1,25 @@
 <%- include('partials/header') %>
 
 <%
-  const currentConfig =
-    typeof config !== "undefined" && config
-      ? config
+  const currentSettings =
+    typeof settings !== "undefined" && settings
+      ? settings
       : {};
 
-  const databaseUrl =
-    currentConfig.databaseUrl ||
-    currentConfig.database_url ||
-    currentConfig.DATABASE_URL ||
-    "";
-
-  const botToken =
-    currentConfig.botToken ||
-    currentConfig.bot_token ||
-    currentConfig.BOT_TOKEN ||
-    "";
-
   const port =
-    currentConfig.port ||
-    currentConfig.PORT ||
-    "Chưa cấu hình";
+    currentSettings.port || "8080";
 
   const databaseSsl =
-    currentConfig.databaseSsl ??
-    currentConfig.database_ssl ??
-    currentConfig.DATABASE_SSL ??
-    false;
+    currentSettings.databaseSsl ?? "false";
+
+  const databaseUrl =
+    Boolean(currentSettings.hasDatabaseUrl);
+
+  const botToken =
+    Boolean(currentSettings.hasBotToken);
 
   const adminUsername =
-    currentConfig.adminUsername ||
-    currentConfig.admin_username ||
-    currentConfig.ADMIN_USERNAME ||
-    "Chưa cấu hình";
+    currentSettings.adminUsername || "(chưa set)";
 
   const databaseConnected =
     typeof health !== "undefined" &&
@@ -57,23 +43,20 @@
   }
 
   .settings-page {
-    --settings-green: #16a34a;
-    --settings-green-dark: #15803d;
-    --settings-green-soft: #dcfce7;
-    --settings-blue: #2563eb;
-    --settings-blue-soft: #dbeafe;
-    --settings-red: #dc2626;
-    --settings-red-soft: #fee2e2;
-    --settings-text: #111827;
-    --settings-muted: #6b7280;
-    --settings-border: #e5e7eb;
-    --settings-card: #ffffff;
+    --green: #16a34a;
+    --green-dark: #15803d;
+    --green-soft: #dcfce7;
+    --red: #dc2626;
+    --red-soft: #fee2e2;
+    --text: #111827;
+    --muted: #6b7280;
+    --border: #e5e7eb;
 
     width: 100%;
     max-width: 1180px;
     margin: 0 auto;
     padding: 22px 18px 42px;
-    color: var(--settings-text);
+    color: var(--text);
   }
 
   .settings-hero {
@@ -102,8 +85,8 @@
     margin-bottom: 9px;
     padding: 6px 11px;
     border-radius: 999px;
-    background: var(--settings-green-soft);
-    color: var(--settings-green-dark);
+    background: var(--green-soft);
+    color: var(--green-dark);
     font-size: 13px;
     font-weight: 750;
   }
@@ -117,7 +100,7 @@
 
   .settings-hero p {
     margin: 9px 0 0;
-    color: var(--settings-muted);
+    color: var(--muted);
     font-size: 15px;
     line-height: 1.55;
   }
@@ -144,9 +127,9 @@
 
   .settings-card {
     overflow: hidden;
-    border: 1px solid var(--settings-border);
+    border: 1px solid var(--border);
     border-radius: 23px;
-    background: var(--settings-card);
+    background: #ffffff;
     box-shadow: 0 13px 34px rgba(15, 23, 42, 0.055);
   }
 
@@ -155,7 +138,7 @@
     align-items: center;
     gap: 12px;
     padding: 21px 22px;
-    border-bottom: 1px solid var(--settings-border);
+    border-bottom: 1px solid var(--border);
   }
 
   .settings-card-icon {
@@ -165,7 +148,7 @@
     flex: 0 0 43px;
     place-items: center;
     border-radius: 14px;
-    background: var(--settings-green-soft);
+    background: var(--green-soft);
     font-size: 20px;
   }
 
@@ -177,7 +160,7 @@
 
   .settings-card-header p {
     margin: 4px 0 0;
-    color: var(--settings-muted);
+    color: var(--muted);
     font-size: 13px;
   }
 
@@ -219,7 +202,7 @@
 
   .settings-row-title {
     display: block;
-    color: var(--settings-text);
+    color: var(--text);
     font-size: 14px;
     font-weight: 750;
   }
@@ -227,7 +210,7 @@
   .settings-row-description {
     display: block;
     margin-top: 4px;
-    color: var(--settings-muted);
+    color: var(--muted);
     font-size: 12px;
     line-height: 1.4;
   }
@@ -247,13 +230,13 @@
   }
 
   .settings-value.configured {
-    background: var(--settings-green-soft);
-    color: var(--settings-green-dark);
+    background: var(--green-soft);
+    color: var(--green-dark);
   }
 
   .settings-value.warning {
-    background: var(--settings-red-soft);
-    color: var(--settings-red);
+    background: var(--red-soft);
+    color: var(--red);
   }
 
   .health-content {
@@ -285,13 +268,13 @@
   }
 
   .health-status.disconnected .health-dot {
-    background: var(--settings-red);
+    background: var(--red);
     box-shadow: 0 0 0 6px rgba(220, 38, 38, 0.11);
   }
 
   .health-label {
     display: block;
-    color: var(--settings-muted);
+    color: var(--muted);
     font-size: 12px;
     font-weight: 650;
   }
@@ -299,13 +282,13 @@
   .health-value {
     display: block;
     margin-top: 3px;
-    color: var(--settings-green-dark);
+    color: var(--green-dark);
     font-size: 19px;
     font-weight: 850;
   }
 
   .health-status.disconnected .health-value {
-    color: var(--settings-red);
+    color: var(--red);
   }
 
   .health-message {
@@ -322,10 +305,10 @@
     gap: 14px;
     margin-top: 18px;
     padding: 15px 16px;
-    border: 1px solid var(--settings-border);
+    border: 1px solid var(--border);
     border-radius: 15px;
     background: #f9fafb;
-    color: var(--settings-text);
+    color: var(--text);
     text-decoration: none;
   }
 
@@ -337,8 +320,8 @@
   .health-link code {
     padding: 5px 8px;
     border-radius: 8px;
-    background: var(--settings-blue-soft);
-    color: var(--settings-blue);
+    background: #dbeafe;
+    color: #2563eb;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 12px;
   }
@@ -495,8 +478,7 @@
           </div>
 
           <strong
-            class="settings-value
-              <%= databaseUrl ? 'configured' : 'warning' %>"
+            class="settings-value <%= databaseUrl ? 'configured' : 'warning' %>"
           >
             <%= databaseUrl ? 'Đã cấu hình' : 'Chưa cấu hình' %>
           </strong>
@@ -532,8 +514,7 @@
           </div>
 
           <strong
-            class="settings-value
-              <%= botToken ? 'configured' : 'warning' %>"
+            class="settings-value <%= botToken ? 'configured' : 'warning' %>"
           >
             <%= botToken ? 'Đã cấu hình' : 'Chưa cấu hình' %>
           </strong>
@@ -570,8 +551,7 @@
 
       <div class="health-content">
         <div
-          class="health-status
-            <%= databaseConnected ? '' : 'disconnected' %>"
+          class="health-status <%= databaseConnected ? '' : 'disconnected' %>"
         >
           <span class="health-dot"></span>
 
@@ -579,9 +559,7 @@
             <span class="health-label">Trạng thái</span>
 
             <strong class="health-value">
-              <%= databaseConnected
-                ? 'Connected'
-                : 'Disconnected' %>
+              <%= databaseConnected ? 'Connected' : 'Disconnected' %>
             </strong>
           </div>
         </div>
