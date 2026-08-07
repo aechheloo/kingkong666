@@ -8,8 +8,7 @@ function transactionMessage({ groupName, type, amount, description, transactionD
     `Số tiền: ${formatCurrency(amount)}`,
     `Ngày: ${formatDate(transactionDate)}`,
     `Nội dung: ${description}`,
-  ].join('
-');
+  ].join('\n');
 }
 
 function salaryDayMessage({ employeeName, groupName, closingDate, totalSalary, totalAdvance, netAmount }) {
@@ -21,8 +20,7 @@ function salaryDayMessage({ employeeName, groupName, closingDate, totalSalary, t
     `Tổng lương: ${formatCurrency(totalSalary)}`,
     `Tạm ứng: ${formatCurrency(totalAdvance)}`,
     `Thực nhận: ${formatCurrency(netAmount)}`,
-  ].join('
-');
+  ].join('\n');
 }
 
 function salaryMonthMessage({ employeeName, groupName, closingMonth, totalSalary, totalAdvance, netAmount }) {
@@ -34,8 +32,7 @@ function salaryMonthMessage({ employeeName, groupName, closingMonth, totalSalary
     `Tổng lương: ${formatCurrency(totalSalary)}`,
     `Tạm ứng: ${formatCurrency(totalAdvance)}`,
     `Thực nhận: ${formatCurrency(netAmount)}`,
-  ].join('
-');
+  ].join('\n');
 }
 
 function expenseDayClosingMessage({ groupName, closingDate, totalIncome, totalExpense, balance }) {
@@ -46,8 +43,7 @@ function expenseDayClosingMessage({ groupName, closingDate, totalIncome, totalEx
     `Tổng thu: ${formatCurrency(totalIncome)}`,
     `Tổng chi: ${formatCurrency(totalExpense)}`,
     `Số dư: ${formatCurrency(balance)}`,
-  ].join('
-');
+  ].join('\n');
 }
 
 function expenseMonthClosingMessage({ groupName, closingMonth, totalIncome, totalExpense, balance }) {
@@ -58,8 +54,7 @@ function expenseMonthClosingMessage({ groupName, closingMonth, totalIncome, tota
     `Tổng thu: ${formatCurrency(totalIncome)}`,
     `Tổng chi: ${formatCurrency(totalExpense)}`,
     `Số dư: ${formatCurrency(balance)}`,
-  ].join('
-');
+  ].join('\n');
 }
 
 module.exports = {
