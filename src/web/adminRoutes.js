@@ -1,5 +1,6 @@
 const express = require('express');
 const adminAuth = require('../middleware/adminAuth');
+const rateLimit = require('../middleware/rateLimit');
 const { healthCheck } = require('../config/database');
 const {
   listGroups,
@@ -47,6 +48,7 @@ const {
 
 const router = express.Router();
 
+router.use(rateLimit);
 router.use(adminAuth);
 
 function wrap(handler) {
