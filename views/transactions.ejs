@@ -1,0 +1,47 @@
+<%- include('partials/header') %>
+<section class="page-header">
+  <div>
+    <h2>Giao dịch - <%= group.name %></h2>
+    <p>Chỉnh sửa hoặc xóa giao dịch đã tạo.</p>
+  </div>
+  <a class="button secondary" href="/admin/groups/<%= group.id %>">Quay lại nhóm</a>
+</section>
+
+<section class="card">
+  <% if (!transactions.length) { %>
+    <p>Chưa có giao dịch nào.</p>
+  <% } else { %>
+    <div class="stack large-gap">
+      <% transactions.forEach((transaction) => { %>
+        <form method="post" action="/admin/transactions/<%= transaction.id %>/edit" class="card nested-form">
+          <div class="form-row">
+            <label>
+              Loại
+              <select name="type">
+                <option value="income" <%= transaction.type === 'income' ? 'selected' : '' %>>Thu</option>
+                <option value="expense" <%= transaction.type === 'expense' ? 'selected' : '' %>>Chi</option>
+              </select>
+            </label>
+            <label>
+              Số tiền
+              <input type="number" name="amount" min="0" step="1000" value="<%= transaction.amount %>" required />
+            </label>
+            <label>
+              Ngày
+              <input type="date" name="transaction_date" value="<%= toDateInputValue(transaction.transaction_date) %>" />
+            </label>
+          </div>
+          <label>
+            Nội dung
+            <textarea name="description" rows="2" required><%= transaction.description %></textarea>
+          </label>
+          <div class="actions between">
+            <button class="button" type="submit">Lưu</button>
+            <button class="button danger" type="submit" formaction="/admin/transactions/<%= transaction.id %>/delete" formmethod="post">Xóa</button>
+          </div>
+        </form>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+<%- include('partials/footer') %>

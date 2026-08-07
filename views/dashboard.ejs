@@ -1,0 +1,68 @@
+<%- include('partials/header') %>
+<section class="page-header">
+  <div>
+    <h2>Tổng quan</h2>
+    <p>Theo dõi nhanh toàn bộ hệ thống.</p>
+  </div>
+  <a class="button secondary" href="/admin/groups">Quản lý nhóm</a>
+</section>
+
+<section class="grid cards">
+  <article class="card stat-card">
+    <span>Nhóm</span>
+    <strong><%= stats.groupCount %></strong>
+  </article>
+  <article class="card stat-card">
+    <span>Nhân viên</span>
+    <strong><%= stats.employeeCount %></strong>
+  </article>
+  <article class="card stat-card">
+    <span>Tổng thu</span>
+    <strong><%= formatCurrency(stats.totalIncome) %></strong>
+  </article>
+  <article class="card stat-card">
+    <span>Tổng chi</span>
+    <strong><%= formatCurrency(stats.totalExpense) %></strong>
+  </article>
+  <article class="card stat-card">
+    <span>Số dư</span>
+    <strong><%= formatCurrency(stats.balance) %></strong>
+  </article>
+  <article class="card stat-card <%= health.connected ? 'ok' : 'warn' %>">
+    <span>Database</span>
+    <strong><%= health.connected ? 'Connected' : 'Disconnected' %></strong>
+  </article>
+</section>
+
+<section class="card">
+  <h3>Giao dịch gần đây</h3>
+  <% if (!stats.recentTransactions.length) { %>
+    <p>Chưa có giao dịch nào.</p>
+  <% } else { %>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Ngày</th>
+            <th>Nhóm</th>
+            <th>Loại</th>
+            <th>Số tiền</th>
+            <th>Nội dung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% stats.recentTransactions.forEach((transaction) => { %>
+            <tr>
+              <td><%= formatDate(transaction.transaction_date) %></td>
+              <td><%= transaction.group_name %></td>
+              <td><%= transaction.type === 'income' ? 'Thu' : 'Chi' %></td>
+              <td><%= formatCurrency(transaction.amount) %></td>
+              <td><%= transaction.description %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+<%- include('partials/footer') %>
