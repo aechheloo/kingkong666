@@ -1,4 +1,6 @@
-const { TelegramBot } = require('node-telegram-bot-api');
+const telegramModule = require('node-telegram-bot-api');
+
+const TelegramBot = telegramModule.TelegramBot || telegramModule;
 
 let bot;
 

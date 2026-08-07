@@ -42,6 +42,10 @@ function pad(number) {
 }
 
 function toDateInputValue(value = new Date()) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return '';
@@ -51,6 +55,10 @@ function toDateInputValue(value = new Date()) {
 }
 
 function toMonthInputValue(value = new Date()) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}(-\d{2})?$/.test(value)) {
+    return value.slice(0, 7);
+  }
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
     return '';
