@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title><%= pageTitle %></title>
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <main class="container single-card">
-    <section class="card">
+  <main class="error-page">
+    <section class="content-card">
+      <span class="eyebrow">THÔNG BÁO</span>
       <h1><%= pageTitle %></h1>
       <p><%= error %></p>
-      <a class="button" href="/admin/dashboard">Về dashboard</a>
+      <a class="button button-primary" href="/admin/dashboard">Về trang chủ</a>
     </section>
   </main>
 </body>

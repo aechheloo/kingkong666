@@ -1,5 +1,5 @@
 const { query } = require('../config/database');
-const { parseAmount } = require('../utils/format');
+const { parsePercent } = require('../utils/format');
 const { getGroupById } = require('./groupService');
 
 async function listEmployeesByGroup(groupId) {
@@ -14,7 +14,7 @@ async function listEmployeesByGroup(groupId) {
   return result.rows;
 }
 
-async function addEmployee(groupId, { name, role, dailyRate }) {
+async function addEmployee(groupId, { name, role, revenuePercent }) {
   await getGroupById(groupId);
   const trimmedName = String(name || '').trim();
   if (!trimmedName) {
@@ -25,10 +25,15 @@ async function addEmployee(groupId, { name, role, dailyRate }) {
   }
 
   const result = await query(
-    `INSERT INTO employees (group_id, name, role, daily_rate)
+    `INSERT INTO employees (group_id, name, role, revenue_percent)
      VALUES ($1, $2, $3, $4)
      RETURNING *`,
-    [groupId, trimmedName, String(role || '').trim() || null, parseAmount(dailyRate || 0)]
+    [
+      groupId,
+      trimmedName,
+      String(role || '').trim() || null,
+      parsePercent(revenuePercent || 0),
+    ]
   );
 
   return result.rows[0];
@@ -36,7 +41,11 @@ async function addEmployee(groupId, { name, role, dailyRate }) {
 
 async function getEmployeeById(employeeId) {
   const result = await query(
-    `SELECT e.*, g.name AS group_name, g.telegram_chat_id
+    `SELECT
+       e.*,
+       g.name AS group_name,
+       g.telegram_chat_id,
+       g.wash_fee_percent
      FROM employees e
      JOIN groups g ON g.id = e.group_id
      WHERE e.id = $1`,

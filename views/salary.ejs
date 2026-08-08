@@ -1,198 +1,131 @@
 <%- include('partials/header') %>
-<section class="page-header">
-  <div>
-    <h2>Lương - <%= overview.employee.name %></h2>
-    <p><%= overview.employee.group_name %> • <%= overview.employee.role || 'Chưa có vai trò' %></p>
+
+<%
+  const employeeLabel = overview.employee.role
+    ? `${overview.employee.name} (${overview.employee.role})`
+    : overview.employee.name;
+%>
+
+<section class="page-shell">
+  <div class="group-header-card">
+    <div>
+      <span class="eyebrow">LƯƠNG NHÂN VIÊN</span>
+      <h1><%= employeeLabel %></h1>
+      <p><%= overview.employee.group_name %> • Tháng <%= formatMonth(overview.currentMonth) %></p>
+    </div>
+    <a class="button button-light" href="/admin/groups/<%= overview.employee.group_id %>/employees">Danh sách nhân viên</a>
   </div>
-  <a class="button secondary" href="/admin/groups/<%= overview.employee.group_id %>/employees">Quay lại nhân viên</a>
+
+  <nav class="section-tabs" aria-label="Chức năng nhóm">
+    <a href="/admin/groups/<%= overview.employee.group_id %>">Thu chi</a>
+    <a class="active" href="/admin/groups/<%= overview.employee.group_id %>/employees">Lương</a>
+    <a href="/admin/groups/<%= overview.employee.group_id %>#group-settings">Cài đặt nhóm</a>
+  </nav>
+
+  <section class="summary-grid salary-summary">
+    <article class="summary-card income"><span>Tổng doanh thu</span><strong><%= formatCurrency(overview.totals.totalRevenue) %></strong></article>
+    <article class="summary-card neutral"><span>Phí rửa</span><strong><%= formatPercent(overview.totals.washFeePercent) %>%</strong></article>
+    <article class="summary-card balance"><span>Doanh thu sau rửa</span><strong><%= formatCurrency(overview.totals.revenueAfterWash) %></strong></article>
+    <article class="summary-card neutral"><span>Phần trăm doanh thu</span><strong><%= formatPercent(overview.totals.revenuePercent) %>%</strong></article>
+    <article class="summary-card income"><span>Tiền lương</span><strong><%= formatCurrency(overview.totals.salaryAmount) %></strong></article>
+    <article class="summary-card expense"><span>Đã ứng</span><strong><%= formatCurrency(overview.totals.totalAdvance) %></strong></article>
+    <article class="summary-card balance"><span>Còn lại</span><strong><%= formatCurrency(overview.totals.netAmount) %></strong></article>
+  </section>
+
+  <section class="two-column-layout">
+    <article class="content-card form-card">
+      <div class="card-heading"><div><h2>Thêm doanh thu</h2><p>Nhập doanh thu của nhân viên theo từng ngày.</p></div></div>
+      <form method="post" action="/admin/employees/<%= overview.employee.id %>/salary/add" class="form-stack" data-money-form>
+        <label><span>Số tiền</span><div class="money-field"><input type="text" name="amount" inputmode="numeric" data-money-input required placeholder="0"><span>đ</span></div></label>
+        <label><span>Ngày</span><input type="date" name="work_date" value="<%= toDateInputValue() %>" data-default-today required></label>
+        <label><span>Ghi chú</span><textarea name="note" rows="2"></textarea></label>
+        <button class="button button-primary button-full" type="submit">Thêm doanh thu</button>
+      </form>
+    </article>
+
+    <article class="content-card form-card">
+      <div class="card-heading"><div><h2>Ứng tiền</h2><p>Lưu từng lần ứng tiền trong tháng.</p></div></div>
+      <form method="post" action="/admin/employees/<%= overview.employee.id %>/salary/advance" class="form-stack" data-money-form>
+        <label><span>Số tiền ứng</span><div class="money-field"><input type="text" name="amount" inputmode="numeric" data-money-input required placeholder="0"><span>đ</span></div></label>
+        <label><span>Ngày</span><input type="date" name="advance_date" value="<%= toDateInputValue() %>" data-default-today required></label>
+        <label><span>Ghi chú</span><textarea name="note" rows="2"></textarea></label>
+        <button class="button button-secondary button-full" type="submit">Lưu tiền ứng</button>
+      </form>
+    </article>
+  </section>
+
+  <section class="two-column-layout">
+    <article class="content-card form-card">
+      <div class="card-heading"><div><h2>Chốt doanh thu ngày</h2><p>Gửi danh sách doanh thu của ngày sang Telegram.</p></div></div>
+      <form method="post" action="/admin/employees/<%= overview.employee.id %>/salary/close-day" class="form-stack" data-confirm="Chốt doanh thu ngày này?">
+        <div class="form-grid two">
+          <label><span>Ngày</span><input type="date" name="closing_date" value="<%= toDateInputValue() %>" data-default-today required></label>
+          <label><span>Giờ chốt</span><input type="time" name="closing_time" value="<%= toTimeInputValue() %>" data-default-time required></label>
+        </div>
+        <label><span>Ghi chú</span><textarea name="note" rows="2"></textarea></label>
+        <button class="button button-primary button-full" type="submit">Chốt ngày</button>
+      </form>
+    </article>
+
+    <article class="content-card form-card">
+      <div class="card-heading"><div><h2>Chốt lương tháng</h2><p>Tính phí rửa, lương, đã ứng và còn lại.</p></div></div>
+      <form method="post" action="/admin/employees/<%= overview.employee.id %>/salary/close-month" class="form-stack" data-confirm="Chốt lương tháng này?">
+        <label><span>Tháng</span><input type="month" name="closing_month" value="<%= toMonthInputValue() %>" data-default-month required></label>
+        <input type="hidden" name="closing_date" value="<%= toDateInputValue() %>" data-default-today>
+        <input type="hidden" name="closing_time" value="<%= toTimeInputValue() %>" data-default-time>
+        <label><span>Ghi chú</span><textarea name="note" rows="2"></textarea></label>
+        <button class="button button-primary button-full" type="submit">Chốt tháng</button>
+      </form>
+    </article>
+  </section>
+
+  <section class="two-column-layout">
+    <article class="content-card">
+      <div class="card-heading"><div><h2>Lịch sử doanh thu</h2><p>Các lần nhập doanh thu gần đây.</p></div></div>
+      <% if (!overview.entries.length) { %><div class="empty-state">Chưa có doanh thu.</div><% } else { %>
+        <div class="simple-list">
+          <% overview.entries.forEach((entry) => { %>
+            <div><span><strong><%= formatDate(entry.work_date) %></strong><small><%= entry.note || 'Không có ghi chú' %></small></span><strong class="money income">+<%= formatCurrency(entry.amount) %></strong></div>
+          <% }) %>
+        </div>
+      <% } %>
+    </article>
+
+    <article class="content-card">
+      <div class="card-heading"><div><h2>Lịch sử ứng tiền</h2><p>Các lần ứng tiền gần đây.</p></div></div>
+      <% if (!overview.advances.length) { %><div class="empty-state">Chưa có tiền ứng.</div><% } else { %>
+        <div class="simple-list">
+          <% overview.advances.forEach((advance) => { %>
+            <div><span><strong><%= formatDate(advance.advance_date) %></strong><small><%= advance.note || 'Không có ghi chú' %></small></span><strong class="money expense">-<%= formatCurrency(advance.amount) %></strong></div>
+          <% }) %>
+        </div>
+      <% } %>
+    </article>
+  </section>
+
+  <section class="two-column-layout">
+    <article class="content-card">
+      <div class="card-heading"><div><h2>Chốt ngày gần đây</h2></div></div>
+      <% if (!overview.dailyClosings.length) { %><div class="empty-state">Chưa chốt ngày.</div><% } else { %>
+        <div class="simple-list">
+          <% overview.dailyClosings.forEach((item) => { %>
+            <div><span><strong><%= formatDate(item.closing_date) %></strong><small>Doanh thu ngày</small></span><strong><%= formatCurrency(item.total_salary) %></strong></div>
+          <% }) %>
+        </div>
+      <% } %>
+    </article>
+
+    <article class="content-card">
+      <div class="card-heading"><div><h2>Chốt tháng gần đây</h2></div></div>
+      <% if (!overview.monthlyClosings.length) { %><div class="empty-state">Chưa chốt tháng.</div><% } else { %>
+        <div class="simple-list">
+          <% overview.monthlyClosings.forEach((item) => { %>
+            <div><span><strong><%= formatMonth(item.closing_month) %></strong><small>Lương: <%= formatCurrency(item.total_salary) %> • Đã ứng: <%= formatCurrency(item.total_advance) %></small></span><strong><%= formatCurrency(item.net_amount) %></strong></div>
+          <% }) %>
+        </div>
+      <% } %>
+    </article>
+  </section>
 </section>
 
-<section class="grid cards">
-  <article class="card stat-card">
-    <span>Lương ngày mặc định</span>
-    <strong><%= formatCurrency(overview.employee.daily_rate) %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Tổng lương</span>
-    <strong><%= formatCurrency(overview.totals.totalSalary) %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Tạm ứng</span>
-    <strong><%= formatCurrency(overview.totals.totalAdvance) %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Thực nhận</span>
-    <strong><%= formatCurrency(overview.totals.netAmount) %></strong>
-  </article>
-</section>
-
-<section class="grid two-columns">
-  <article class="card">
-    <h3>Thêm lương ngày</h3>
-    <form method="post" action="/admin/employees/<%= overview.employee.id %>/salary/add" class="stack">
-      <label>
-        Số tiền
-        <input type="number" name="amount" min="0" step="1000" placeholder="Để trống = lương ngày mặc định" />
-      </label>
-      <label>
-        Ngày làm
-        <input type="date" name="work_date" value="<%= toDateInputValue() %>" />
-      </label>
-      <label>
-        Ghi chú
-        <textarea name="note" rows="2"></textarea>
-      </label>
-      <button class="button" type="submit">Thêm lương</button>
-    </form>
-  </article>
-
-  <article class="card">
-    <h3>Ứng lương</h3>
-    <form method="post" action="/admin/employees/<%= overview.employee.id %>/salary/advance" class="stack">
-      <label>
-        Số tiền
-        <input type="number" name="amount" min="0" step="1000" required />
-      </label>
-      <label>
-        Ngày ứng
-        <input type="date" name="advance_date" value="<%= toDateInputValue() %>" />
-      </label>
-      <label>
-        Ghi chú
-        <textarea name="note" rows="2"></textarea>
-      </label>
-      <button class="button" type="submit">Lưu ứng lương</button>
-    </form>
-  </article>
-</section>
-
-<section class="grid two-columns">
-  <article class="card">
-    <h3>Chốt lương ngày</h3>
-    <form method="post" action="/admin/employees/<%= overview.employee.id %>/salary/close-day" class="stack">
-      <label>
-        Ngày chốt
-        <input type="date" name="closing_date" value="<%= toDateInputValue() %>" />
-      </label>
-      <label>
-        Ghi chú
-        <textarea name="note" rows="2"></textarea>
-      </label>
-      <button class="button" type="submit">Chốt ngày</button>
-    </form>
-  </article>
-
-  <article class="card">
-    <h3>Chốt lương tháng</h3>
-    <form method="post" action="/admin/employees/<%= overview.employee.id %>/salary/close-month" class="stack">
-      <label>
-        Tháng chốt
-        <input type="month" name="closing_month" value="<%= toMonthInputValue() %>" />
-      </label>
-      <label>
-        Ghi chú
-        <textarea name="note" rows="2"></textarea>
-      </label>
-      <button class="button" type="submit">Chốt tháng</button>
-    </form>
-  </article>
-</section>
-
-<section class="grid two-columns">
-  <article class="card">
-    <h3>Lịch sử lương</h3>
-    <% if (!overview.entries.length) { %>
-      <p>Chưa có dòng lương nào.</p>
-    <% } else { %>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Ngày</th>
-              <th>Số tiền</th>
-              <th>Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% overview.entries.forEach((entry) => { %>
-              <tr>
-                <td><%= formatDate(entry.work_date) %></td>
-                <td><%= formatCurrency(entry.amount) %></td>
-                <td><%= entry.note || '-' %></td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-    <% } %>
-  </article>
-
-  <article class="card">
-    <h3>Lịch sử ứng lương</h3>
-    <% if (!overview.advances.length) { %>
-      <p>Chưa có dòng ứng lương nào.</p>
-    <% } else { %>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Ngày</th>
-              <th>Số tiền</th>
-              <th>Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% overview.advances.forEach((entry) => { %>
-              <tr>
-                <td><%= formatDate(entry.advance_date) %></td>
-                <td><%= formatCurrency(entry.amount) %></td>
-                <td><%= entry.note || '-' %></td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-    <% } %>
-  </article>
-</section>
-
-<section class="grid two-columns">
-  <article class="card">
-    <h3>Chốt lương ngày gần đây</h3>
-    <% if (!overview.dailyClosings.length) { %>
-      <p>Chưa có chốt ngày.</p>
-    <% } else { %>
-      <div class="list compact">
-        <% overview.dailyClosings.forEach((closing) => { %>
-          <div class="list-item static">
-            <div>
-              <strong><%= formatDate(closing.closing_date) %></strong>
-              <small>Tạm ứng: <%= formatCurrency(closing.total_advance) %></small>
-            </div>
-            <span><%= formatCurrency(closing.net_amount) %></span>
-          </div>
-        <% }) %>
-      </div>
-    <% } %>
-  </article>
-
-  <article class="card">
-    <h3>Chốt lương tháng gần đây</h3>
-    <% if (!overview.monthlyClosings.length) { %>
-      <p>Chưa có chốt tháng.</p>
-    <% } else { %>
-      <div class="list compact">
-        <% overview.monthlyClosings.forEach((closing) => { %>
-          <div class="list-item static">
-            <div>
-              <strong><%= formatMonth(closing.closing_month) %></strong>
-              <small>Tạm ứng: <%= formatCurrency(closing.total_advance) %></small>
-            </div>
-            <span><%= formatCurrency(closing.net_amount) %></span>
-          </div>
-        <% }) %>
-      </div>
-    <% } %>
-  </article>
-</section>
 <%- include('partials/footer') %>

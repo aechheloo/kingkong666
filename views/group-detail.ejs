@@ -1,161 +1,200 @@
 <%- include('partials/header') %>
-<section class="page-header">
-  <div>
-    <h2><%= group.name %></h2>
-    <p>Quản lý giao dịch, nhân viên và chốt chi tiêu của nhóm.</p>
+
+<section class="page-shell">
+  <div class="group-header-card">
+    <div>
+      <span class="eyebrow">NHÓM</span>
+      <h1><%= group.name %></h1>
+      <p>Telegram ID: <%= group.telegram_chat_id || 'Chưa kết nối' %></p>
+    </div>
+    <a class="button button-light" href="/admin/groups">Danh sách nhóm</a>
   </div>
-  <div class="actions">
-    <a class="button secondary" href="/admin/groups/<%= group.id %>/transactions">Tất cả giao dịch</a>
-    <a class="button secondary" href="/admin/groups/<%= group.id %>/employees">Nhân viên</a>
-  </div>
-</section>
 
-<section class="grid cards">
-  <article class="card stat-card">
-    <span>Chat ID</span>
-    <strong><%= group.telegram_chat_id || 'Chưa cấu hình' %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Nhân viên</span>
-    <strong><%= group.employee_count %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Tổng thu</span>
-    <strong><%= formatCurrency(summary.totalIncome) %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Tổng chi</span>
-    <strong><%= formatCurrency(summary.totalExpense) %></strong>
-  </article>
-  <article class="card stat-card">
-    <span>Số dư</span>
-    <strong><%= formatCurrency(summary.balance) %></strong>
-  </article>
-</section>
+  <nav class="section-tabs" aria-label="Chức năng nhóm">
+    <a class="active" href="/admin/groups/<%= group.id %>">Thu chi</a>
+    <a href="/admin/groups/<%= group.id %>/employees">Lương</a>
+    <a href="#group-settings">Cài đặt nhóm</a>
+  </nav>
 
-<section class="grid two-columns">
-  <article class="card">
-    <h3>Cập nhật nhóm</h3>
-    <form method="post" action="/admin/groups/<%= group.id %>/edit" class="stack">
-      <label>
-        Tên nhóm
-        <input type="text" name="name" value="<%= group.name %>" required />
-      </label>
-      <label>
-        Telegram Chat ID
-        <input type="text" name="telegram_chat_id" value="<%= group.telegram_chat_id || '' %>" />
-      </label>
-      <button class="button" type="submit">Lưu thay đổi</button>
-    </form>
-  </article>
+  <section class="summary-grid three">
+    <article class="summary-card income">
+      <span>Tổng thu</span>
+      <strong><%= formatCurrency(summary.totalIncome) %></strong>
+    </article>
+    <article class="summary-card expense">
+      <span>Tổng chi</span>
+      <strong><%= formatCurrency(summary.totalExpense) %></strong>
+    </article>
+    <article class="summary-card balance">
+      <span>Còn lại</span>
+      <strong><%= formatCurrency(summary.balance) %></strong>
+    </article>
+  </section>
 
-  <article class="card">
-    <h3>Thêm giao dịch</h3>
-    <form method="post" action="/admin/groups/<%= group.id %>/transaction" class="stack">
-      <label>
-        Loại
-        <select name="type">
-          <option value="income">Thu</option>
-          <option value="expense">Chi</option>
-        </select>
-      </label>
-      <label>
-        Số tiền
-        <input type="number" name="amount" min="0" step="1000" required />
-      </label>
-      <label>
-        Ngày
-        <input type="date" name="transaction_date" value="<%= toDateInputValue() %>" />
-      </label>
-      <label>
-        Nội dung
-        <textarea name="description" rows="3" required></textarea>
-      </label>
-      <button class="button" type="submit">Lưu giao dịch</button>
-    </form>
-  </article>
-</section>
-
-<section class="grid two-columns">
-  <article class="card">
-    <h3>Chốt chi tiêu ngày</h3>
-    <form method="post" action="/admin/groups/<%= group.id %>/close-expense-day" class="stack">
-      <label>
-        Ngày chốt
-        <input type="date" name="closing_date" value="<%= toDateInputValue() %>" />
-      </label>
-      <label>
-        Ghi chú
-        <textarea name="note" rows="2"></textarea>
-      </label>
-      <button class="button" type="submit">Chốt ngày</button>
-    </form>
-  </article>
-
-  <article class="card">
-    <h3>Chốt chi tiêu tháng</h3>
-    <form method="post" action="/admin/groups/<%= group.id %>/close-expense-month" class="stack">
-      <label>
-        Tháng chốt
-        <input type="month" name="closing_month" value="<%= toMonthInputValue() %>" />
-      </label>
-      <label>
-        Ghi chú
-        <textarea name="note" rows="2"></textarea>
-      </label>
-      <button class="button" type="submit">Chốt tháng</button>
-    </form>
-  </article>
-</section>
-
-<section class="grid two-columns">
-  <article class="card">
-    <h3>Giao dịch gần đây</h3>
-    <% if (!transactions.length) { %>
-      <p>Chưa có giao dịch.</p>
-    <% } else { %>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Ngày</th>
-              <th>Loại</th>
-              <th>Số tiền</th>
-              <th>Nội dung</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% transactions.forEach((transaction) => { %>
-              <tr>
-                <td><%= formatDate(transaction.transaction_date) %></td>
-                <td><%= transaction.type === 'income' ? 'Thu' : 'Chi' %></td>
-                <td><%= formatCurrency(transaction.amount) %></td>
-                <td><%= transaction.description %></td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
+  <section class="two-column-layout">
+    <article class="content-card form-card">
+      <div class="card-heading">
+        <div>
+          <h2>Thêm giao dịch</h2>
+          <p>Tiền được tự định dạng khi nhập.</p>
+        </div>
       </div>
-    <% } %>
-  </article>
 
-  <article class="card">
-    <h3>Nhân viên</h3>
-    <% if (!employees.length) { %>
-      <p>Chưa có nhân viên.</p>
-    <% } else { %>
-      <div class="list compact">
-        <% employees.forEach((employee) => { %>
-          <a class="list-item" href="/admin/employees/<%= employee.id %>/salary">
-            <div>
-              <strong><%= employee.name %></strong>
-              <small><%= employee.role || 'Chưa có vai trò' %></small>
+      <form method="post" action="/admin/groups/<%= group.id %>/transaction" class="form-stack" data-money-form>
+        <div class="type-switch" role="group" aria-label="Loại giao dịch">
+          <label>
+            <input type="radio" name="type" value="income" checked>
+            <span>+ Thu</span>
+          </label>
+          <label>
+            <input type="radio" name="type" value="expense">
+            <span>− Chi</span>
+          </label>
+        </div>
+
+        <label>
+          <span>Số tiền</span>
+          <div class="money-field">
+            <input type="text" name="amount" inputmode="numeric" autocomplete="off" data-money-input required placeholder="0">
+            <span>đ</span>
+          </div>
+        </label>
+
+        <label>
+          <span>Nội dung</span>
+          <textarea name="description" rows="3" required placeholder="Nhập nội dung giao dịch"></textarea>
+        </label>
+
+        <div class="form-grid two">
+          <label>
+            <span>Ngày</span>
+            <input type="date" name="transaction_date" value="<%= toDateInputValue() %>" data-default-today required>
+          </label>
+          <label>
+            <span>Giờ</span>
+            <input type="time" name="transaction_time" value="<%= toTimeInputValue() %>" data-default-time required>
+          </label>
+        </div>
+        <input type="hidden" name="timezone_offset" data-timezone-offset>
+
+        <button class="button button-primary button-full" type="submit">Lưu giao dịch</button>
+      </form>
+    </article>
+
+    <article class="content-card" id="group-settings">
+      <div class="card-heading">
+        <div>
+          <h2>Cài đặt nhóm</h2>
+          <p>Tên nhóm, Telegram và phần trăm rửa.</p>
+        </div>
+      </div>
+
+      <form method="post" action="/admin/groups/<%= group.id %>/edit" class="form-stack">
+        <label>
+          <span>Tên nhóm</span>
+          <input type="text" name="name" value="<%= group.name %>" required>
+        </label>
+        <label>
+          <span>Telegram Chat ID</span>
+          <input type="text" name="telegram_chat_id" value="<%= group.telegram_chat_id || '' %>" placeholder="Chưa kết nối">
+        </label>
+        <label>
+          <span>Phần trăm rửa</span>
+          <div class="input-suffix">
+            <input type="number" name="wash_fee_percent" min="0" max="100" step="0.01" value="<%= Number(group.wash_fee_percent || 0) %>" required>
+            <span>%</span>
+          </div>
+        </label>
+        <button class="button button-primary button-full" type="submit">Lưu thay đổi</button>
+      </form>
+
+      <div class="telegram-connect-box <%= telegramWaiting ? 'waiting' : '' %>" data-telegram-box data-status-url="/admin/groups/<%= group.id %>/telegram/status">
+        <div>
+          <strong>Tự nhận ID nhóm</strong>
+          <p data-telegram-message><%= telegramWaiting ? 'Đang chờ bạn thêm bot vào nhóm Telegram…' : 'Bấm nút rồi thêm bot vào nhóm Telegram.' %></p>
+        </div>
+        <form method="post" action="/admin/groups/<%= group.id %>/telegram/connect">
+          <button class="button button-secondary" type="submit">TỰ NHẬN ID NHÓM</button>
+        </form>
+      </div>
+    </article>
+  </section>
+
+  <section class="two-column-layout">
+    <article class="content-card form-card">
+      <div class="card-heading"><div><h2>Chốt chi tiêu ngày</h2><p>Không xóa giao dịch, dữ liệu vẫn cộng dồn tháng.</p></div></div>
+      <form method="post" action="/admin/groups/<%= group.id %>/close-expense-day" class="form-stack" data-confirm="Chốt chi tiêu ngày này?">
+        <div class="form-grid two">
+          <label><span>Ngày</span><input type="date" name="closing_date" value="<%= toDateInputValue() %>" data-default-today required></label>
+          <label><span>Giờ chốt</span><input type="time" name="closing_time" value="<%= toTimeInputValue() %>" data-default-time required></label>
+        </div>
+        <label><span>Ghi chú</span><textarea name="note" rows="2"></textarea></label>
+        <button class="button button-primary button-full" type="submit">Chốt ngày</button>
+      </form>
+    </article>
+
+    <article class="content-card form-card">
+      <div class="card-heading"><div><h2>Chốt chi tiêu tháng</h2><p>Tổng hợp chi tiêu từng ngày trong tháng.</p></div></div>
+      <form method="post" action="/admin/groups/<%= group.id %>/close-expense-month" class="form-stack" data-confirm="Chốt chi tiêu tháng này?">
+        <label><span>Tháng</span><input type="month" name="closing_month" value="<%= toMonthInputValue() %>" data-default-month required></label>
+        <input type="hidden" name="closing_date" value="<%= toDateInputValue() %>" data-default-today>
+        <input type="hidden" name="closing_time" value="<%= toTimeInputValue() %>" data-default-time>
+        <label><span>Ghi chú</span><textarea name="note" rows="2"></textarea></label>
+        <button class="button button-primary button-full" type="submit">Chốt tháng</button>
+      </form>
+    </article>
+  </section>
+
+  <section class="two-column-layout">
+    <article class="content-card">
+      <div class="card-heading">
+        <div><h2>Giao dịch gần đây</h2><p>Thu và chi mới nhất của nhóm.</p></div>
+        <a class="text-link" href="/admin/groups/<%= group.id %>/transactions">Xem tất cả</a>
+      </div>
+      <% if (!transactions.length) { %>
+        <div class="empty-state">Chưa có giao dịch.</div>
+      <% } else { %>
+        <div class="transaction-list">
+          <% transactions.forEach((transaction) => { %>
+            <div class="transaction-item">
+              <div class="transaction-icon <%= transaction.type %>"><%= transaction.type === 'income' ? '+' : '−' %></div>
+              <div class="transaction-main">
+                <strong><%= transaction.description %></strong>
+                <small><%= formatDate(transaction.transaction_date) %></small>
+                <div class="item-actions">
+                  <a href="/admin/groups/<%= group.id %>/transactions#transaction-<%= transaction.id %>">Sửa</a>
+                  <form method="post" action="/admin/transactions/<%= transaction.id %>/delete" data-confirm="Xóa giao dịch này?">
+                    <button type="submit">Xóa</button>
+                  </form>
+                </div>
+              </div>
+              <strong class="money <%= transaction.type %>"><%= transaction.type === 'income' ? '+' : '-' %><%= formatCurrency(transaction.amount) %></strong>
             </div>
-            <span><%= formatCurrency(employee.daily_rate) %>/ngày</span>
-          </a>
-        <% }) %>
+          <% }) %>
+        </div>
+      <% } %>
+    </article>
+
+    <article class="content-card">
+      <div class="card-heading">
+        <div><h2>Nhân viên</h2><p>Phần lương và doanh thu nhân viên.</p></div>
+        <a class="text-link" href="/admin/groups/<%= group.id %>/employees">Quản lý</a>
       </div>
-    <% } %>
-  </article>
+      <% if (!employees.length) { %>
+        <div class="empty-state">Chưa có nhân viên.</div>
+      <% } else { %>
+        <div class="employee-list">
+          <% employees.forEach((employee) => { %>
+            <a href="/admin/employees/<%= employee.id %>/salary" class="employee-item">
+              <span class="employee-avatar"><%= String(employee.name).charAt(0).toUpperCase() %></span>
+              <span><strong><%= employee.name %><%= employee.role ? ` (${employee.role})` : '' %></strong><small>Phần trăm doanh thu: <%= formatPercent(employee.revenue_percent) %>%</small></span>
+              <span>›</span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+    </article>
+  </section>
 </section>
+
 <%- include('partials/footer') %>
