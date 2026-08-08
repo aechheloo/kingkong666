@@ -7,14 +7,23 @@ async function closeExpenseDay(groupId, { closingDate, note }) {
   const date = closingDate || toDateInputValue();
 
   return withTransaction(async (client) => {
-    const totalsResult = await client.query(
-      `SELECT
-        COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS total_income,
-        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_expense
-      FROM transactions
-      WHERE group_id = $1 AND transaction_date = $2`,
-      [groupId, date]
-    );
+    const [totalsResult, expensesResult] = await Promise.all([
+      client.query(
+        `SELECT
+          COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS total_income,
+          COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_expense
+        FROM transactions
+        WHERE group_id = $1 AND transaction_date = $2`,
+        [groupId, date]
+      ),
+      client.query(
+        `SELECT amount, description, transaction_date, created_at
+         FROM transactions
+         WHERE group_id = $1 AND transaction_date = $2 AND type = 'expense'
+         ORDER BY created_at ASC, id ASC`,
+        [groupId, date]
+      ),
+    ]);
 
     const totals = totalsResult.rows[0];
     const totalIncome = Number(totals.total_income || 0);
@@ -33,7 +42,11 @@ async function closeExpenseDay(groupId, { closingDate, note }) {
       [groupId, date, totalIncome, totalExpense, balance, String(note || '').trim() || null]
     );
 
-    return { group, closing: result.rows[0] };
+    return {
+      group,
+      expenses: expensesResult.rows,
+      closing: result.rows[0],
+    };
   });
 }
 
@@ -42,14 +55,26 @@ async function closeExpenseMonth(groupId, { closingMonth, note }) {
   const month = closingMonth || toMonthInputValue();
 
   return withTransaction(async (client) => {
-    const totalsResult = await client.query(
-      `SELECT
-        COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS total_income,
-        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_expense
-      FROM transactions
-      WHERE group_id = $1 AND TO_CHAR(transaction_date, 'YYYY-MM') = $2`,
-      [groupId, month]
-    );
+    const [totalsResult, dailyExpensesResult] = await Promise.all([
+      client.query(
+        `SELECT
+          COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS total_income,
+          COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_expense
+        FROM transactions
+        WHERE group_id = $1 AND TO_CHAR(transaction_date, 'YYYY-MM') = $2`,
+        [groupId, month]
+      ),
+      client.query(
+        `SELECT transaction_date, SUM(amount) AS total_expense
+         FROM transactions
+         WHERE group_id = $1
+           AND type = 'expense'
+           AND TO_CHAR(transaction_date, 'YYYY-MM') = $2
+         GROUP BY transaction_date
+         ORDER BY transaction_date ASC`,
+        [groupId, month]
+      ),
+    ]);
 
     const totals = totalsResult.rows[0];
     const totalIncome = Number(totals.total_income || 0);
@@ -68,7 +93,11 @@ async function closeExpenseMonth(groupId, { closingMonth, note }) {
       [groupId, month, totalIncome, totalExpense, balance, String(note || '').trim() || null]
     );
 
-    return { group, closing: result.rows[0] };
+    return {
+      group,
+      dailyExpenses: dailyExpensesResult.rows,
+      closing: result.rows[0],
+    };
   });
 }
 

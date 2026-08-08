@@ -2,17 +2,34 @@ const { query, withTransaction } = require('../config/database');
 const { parseAmount, toDateInputValue, toMonthInputValue } = require('../utils/format');
 const { getEmployeeById } = require('./employeeService');
 
+function calculateSalary(employee, totalRevenue, totalAdvance) {
+  const washFeePercent = Number(employee.wash_fee_percent || 0);
+  const revenuePercent = Number(employee.revenue_percent || 0);
+  const washFeeAmount = Math.round((totalRevenue * washFeePercent) / 100);
+  const revenueAfterWash = totalRevenue - washFeeAmount;
+  const salaryAmount = Math.round((revenueAfterWash * revenuePercent) / 100);
+  const netAmount = salaryAmount - totalAdvance;
+
+  return {
+    totalRevenue,
+    washFeePercent,
+    washFeeAmount,
+    revenueAfterWash,
+    revenuePercent,
+    salaryAmount,
+    totalAdvance,
+    netAmount,
+  };
+}
+
 async function addSalaryEntry(employeeId, { amount, workDate, note }) {
-  const employee = await getEmployeeById(employeeId);
-  const resolvedAmount = amount === undefined || amount === null || amount === ''
-    ? Number(employee.daily_rate || 0)
-    : parseAmount(amount);
+  await getEmployeeById(employeeId);
 
   const result = await query(
     `INSERT INTO salary_entries (employee_id, amount, work_date, note)
      VALUES ($1, $2, COALESCE($3, CURRENT_DATE), $4)
      RETURNING *`,
-    [employeeId, resolvedAmount, workDate || null, String(note || '').trim() || null]
+    [employeeId, parseAmount(amount), workDate || null, String(note || '').trim() || null]
   );
 
   return result.rows[0];
@@ -32,13 +49,14 @@ async function addSalaryAdvance(employeeId, { amount, advanceDate, note }) {
 
 async function getSalaryOverview(employeeId) {
   const employee = await getEmployeeById(employeeId);
+  const currentMonth = toMonthInputValue();
   const [entriesResult, advancesResult, closingsDayResult, closingsMonthResult, totalsResult] = await Promise.all([
     query(
       `SELECT *
        FROM salary_entries
        WHERE employee_id = $1
        ORDER BY work_date DESC, id DESC
-       LIMIT 20`,
+       LIMIT 50`,
       [employeeId]
     ),
     query(
@@ -46,7 +64,7 @@ async function getSalaryOverview(employeeId) {
        FROM salary_advances
        WHERE employee_id = $1
        ORDER BY advance_date DESC, id DESC
-       LIMIT 20`,
+       LIMIT 50`,
       [employeeId]
     ),
     query(
@@ -67,27 +85,31 @@ async function getSalaryOverview(employeeId) {
     ),
     query(
       `SELECT
-        COALESCE((SELECT SUM(amount) FROM salary_entries WHERE employee_id = $1), 0) AS total_salary,
-        COALESCE((SELECT SUM(amount) FROM salary_advances WHERE employee_id = $1), 0) AS total_advance`,
-      [employeeId]
+        COALESCE((SELECT SUM(amount)
+                  FROM salary_entries
+                  WHERE employee_id = $1 AND TO_CHAR(work_date, 'YYYY-MM') = $2), 0) AS total_revenue,
+        COALESCE((SELECT SUM(amount)
+                  FROM salary_advances
+                  WHERE employee_id = $1 AND TO_CHAR(advance_date, 'YYYY-MM') = $2), 0) AS total_advance`,
+      [employeeId, currentMonth]
     ),
   ]);
 
-  const totals = totalsResult.rows[0] || { total_salary: 0, total_advance: 0 };
-  const totalSalary = Number(totals.total_salary || 0);
-  const totalAdvance = Number(totals.total_advance || 0);
+  const totals = totalsResult.rows[0] || { total_revenue: 0, total_advance: 0 };
+  const calculation = calculateSalary(
+    employee,
+    Number(totals.total_revenue || 0),
+    Number(totals.total_advance || 0)
+  );
 
   return {
     employee,
+    currentMonth,
     entries: entriesResult.rows,
     advances: advancesResult.rows,
     dailyClosings: closingsDayResult.rows,
     monthlyClosings: closingsMonthResult.rows,
-    totals: {
-      totalSalary,
-      totalAdvance,
-      netAmount: totalSalary - totalAdvance,
-    },
+    totals: calculation,
   };
 }
 
@@ -96,17 +118,26 @@ async function closeSalaryDay(employeeId, { closingDate, note }) {
   const date = closingDate || toDateInputValue();
 
   return withTransaction(async (client) => {
-    const totalsResult = await client.query(
-      `SELECT
-        COALESCE((SELECT SUM(amount) FROM salary_entries WHERE employee_id = $1 AND work_date = $2), 0) AS total_salary,
-        COALESCE((SELECT SUM(amount) FROM salary_advances WHERE employee_id = $1 AND advance_date = $2), 0) AS total_advance`,
-      [employeeId, date]
-    );
+    const [totalsResult, entriesResult] = await Promise.all([
+      client.query(
+        `SELECT
+          COALESCE((SELECT SUM(amount) FROM salary_entries WHERE employee_id = $1 AND work_date = $2), 0) AS total_revenue,
+          COALESCE((SELECT SUM(amount) FROM salary_advances WHERE employee_id = $1 AND advance_date = $2), 0) AS total_advance`,
+        [employeeId, date]
+      ),
+      client.query(
+        `SELECT amount, note, work_date
+         FROM salary_entries
+         WHERE employee_id = $1 AND work_date = $2
+         ORDER BY id ASC`,
+        [employeeId, date]
+      ),
+    ]);
 
     const totals = totalsResult.rows[0];
-    const totalSalary = Number(totals.total_salary || 0);
+    const totalRevenue = Number(totals.total_revenue || 0);
     const totalAdvance = Number(totals.total_advance || 0);
-    const netAmount = totalSalary - totalAdvance;
+    const netAmount = totalRevenue - totalAdvance;
 
     const result = await client.query(
       `INSERT INTO salary_daily_closings (employee_id, closing_date, total_salary, total_advance, net_amount, note)
@@ -117,11 +148,13 @@ async function closeSalaryDay(employeeId, { closingDate, note }) {
                      net_amount = EXCLUDED.net_amount,
                      note = EXCLUDED.note
        RETURNING *`,
-      [employeeId, date, totalSalary, totalAdvance, netAmount, String(note || '').trim() || null]
+      [employeeId, date, totalRevenue, totalAdvance, netAmount, String(note || '').trim() || null]
     );
 
     return {
       employee,
+      entries: entriesResult.rows,
+      totalRevenue,
       closing: result.rows[0],
     };
   });
@@ -132,32 +165,69 @@ async function closeSalaryMonth(employeeId, { closingMonth, note }) {
   const month = closingMonth || toMonthInputValue();
 
   return withTransaction(async (client) => {
-    const totalsResult = await client.query(
-      `SELECT
-        COALESCE((SELECT SUM(amount) FROM salary_entries WHERE employee_id = $1 AND TO_CHAR(work_date, 'YYYY-MM') = $2), 0) AS total_salary,
-        COALESCE((SELECT SUM(amount) FROM salary_advances WHERE employee_id = $1 AND TO_CHAR(advance_date, 'YYYY-MM') = $2), 0) AS total_advance`,
-      [employeeId, month]
-    );
+    const [totalsResult, dailyResult] = await Promise.all([
+      client.query(
+        `SELECT
+          COALESCE((SELECT SUM(amount) FROM salary_entries WHERE employee_id = $1 AND TO_CHAR(work_date, 'YYYY-MM') = $2), 0) AS total_revenue,
+          COALESCE((SELECT SUM(amount) FROM salary_advances WHERE employee_id = $1 AND TO_CHAR(advance_date, 'YYYY-MM') = $2), 0) AS total_advance`,
+        [employeeId, month]
+      ),
+      client.query(
+        `SELECT work_date, SUM(amount) AS total_revenue
+         FROM salary_entries
+         WHERE employee_id = $1 AND TO_CHAR(work_date, 'YYYY-MM') = $2
+         GROUP BY work_date
+         ORDER BY work_date ASC`,
+        [employeeId, month]
+      ),
+    ]);
 
     const totals = totalsResult.rows[0];
-    const totalSalary = Number(totals.total_salary || 0);
-    const totalAdvance = Number(totals.total_advance || 0);
-    const netAmount = totalSalary - totalAdvance;
+    const calculation = calculateSalary(
+      employee,
+      Number(totals.total_revenue || 0),
+      Number(totals.total_advance || 0)
+    );
 
     const result = await client.query(
-      `INSERT INTO salary_monthly_closings (employee_id, closing_month, total_salary, total_advance, net_amount, note)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO salary_monthly_closings (
+         employee_id, closing_month, total_salary, total_advance, net_amount,
+         total_revenue, wash_fee_percent, wash_fee_amount, revenue_after_wash,
+         revenue_percent, salary_amount, note
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        ON CONFLICT (employee_id, closing_month)
        DO UPDATE SET total_salary = EXCLUDED.total_salary,
                      total_advance = EXCLUDED.total_advance,
                      net_amount = EXCLUDED.net_amount,
+                     total_revenue = EXCLUDED.total_revenue,
+                     wash_fee_percent = EXCLUDED.wash_fee_percent,
+                     wash_fee_amount = EXCLUDED.wash_fee_amount,
+                     revenue_after_wash = EXCLUDED.revenue_after_wash,
+                     revenue_percent = EXCLUDED.revenue_percent,
+                     salary_amount = EXCLUDED.salary_amount,
                      note = EXCLUDED.note
        RETURNING *`,
-      [employeeId, month, totalSalary, totalAdvance, netAmount, String(note || '').trim() || null]
+      [
+        employeeId,
+        month,
+        calculation.salaryAmount,
+        calculation.totalAdvance,
+        calculation.netAmount,
+        calculation.totalRevenue,
+        calculation.washFeePercent,
+        calculation.washFeeAmount,
+        calculation.revenueAfterWash,
+        calculation.revenuePercent,
+        calculation.salaryAmount,
+        String(note || '').trim() || null,
+      ]
     );
 
     return {
       employee,
+      dailyRevenue: dailyResult.rows,
+      calculation,
       closing: result.rows[0],
     };
   });

@@ -1,5 +1,5 @@
 const { query } = require('../config/database');
-const { parseAmount } = require('../utils/format');
+const { parseAmount, parsePercent } = require('../utils/format');
 
 async function listGroups() {
   const result = await query(
@@ -15,7 +15,7 @@ async function listGroups() {
   return result.rows;
 }
 
-async function createGroup({ name, telegramChatId }) {
+async function createGroup({ name, telegramChatId, washFeePercent }) {
   const trimmedName = String(name || '').trim();
   if (!trimmedName) {
     const error = new Error('Tên nhóm là bắt buộc.');
@@ -25,16 +25,20 @@ async function createGroup({ name, telegramChatId }) {
   }
 
   const result = await query(
-    `INSERT INTO groups (name, telegram_chat_id)
-     VALUES ($1, $2)
+    `INSERT INTO groups (name, telegram_chat_id, wash_fee_percent)
+     VALUES ($1, $2, $3)
      RETURNING *`,
-    [trimmedName, String(telegramChatId || '').trim() || null]
+    [
+      trimmedName,
+      String(telegramChatId || '').trim() || null,
+      parsePercent(washFeePercent || 0),
+    ]
   );
 
   return result.rows[0];
 }
 
-async function updateGroup(groupId, { name, telegramChatId }) {
+async function updateGroup(groupId, { name, telegramChatId, washFeePercent }) {
   const trimmedName = String(name || '').trim();
   if (!trimmedName) {
     const error = new Error('Tên nhóm là bắt buộc.');
@@ -47,10 +51,41 @@ async function updateGroup(groupId, { name, telegramChatId }) {
     `UPDATE groups
      SET name = $2,
          telegram_chat_id = $3,
+         wash_fee_percent = $4,
          updated_at = NOW()
      WHERE id = $1
      RETURNING *`,
-    [groupId, trimmedName, String(telegramChatId || '').trim() || null]
+    [
+      groupId,
+      trimmedName,
+      String(telegramChatId || '').trim() || null,
+      parsePercent(washFeePercent || 0),
+    ]
+  );
+
+  if (!result.rows[0]) {
+    const error = new Error('Không tìm thấy nhóm.');
+    error.statusCode = 404;
+    error.expose = true;
+    throw error;
+  }
+
+  return result.rows[0];
+}
+
+async function updateGroupTelegramConnection(groupId, { name, telegramChatId }) {
+  const result = await query(
+    `UPDATE groups
+     SET name = COALESCE(NULLIF($2, ''), name),
+         telegram_chat_id = $3,
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [
+      groupId,
+      String(name || '').trim(),
+      String(telegramChatId || '').trim(),
+    ]
   );
 
   if (!result.rows[0]) {
@@ -111,13 +146,14 @@ async function getDashboardStats() {
       `SELECT
         COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) AS total_income,
         COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) AS total_expense
-      FROM transactions`
+      FROM transactions
+      WHERE transaction_date = CURRENT_DATE`
     ),
     query(
       `SELECT t.*, g.name AS group_name
        FROM transactions t
        JOIN groups g ON g.id = t.group_id
-       ORDER BY t.transaction_date DESC, t.id DESC
+       ORDER BY t.transaction_date DESC, t.created_at DESC, t.id DESC
        LIMIT 10`
     ),
   ]);
@@ -140,6 +176,7 @@ module.exports = {
   listGroups,
   createGroup,
   updateGroup,
+  updateGroupTelegramConnection,
   getGroupById,
   getGroupTransactionsSummary,
   getDashboardStats,

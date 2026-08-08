@@ -8,6 +8,7 @@ const express = require('express');
 const adminRoutes = require('./src/web/adminRoutes');
 const { initDatabase } = require('./src/database/init');
 const { healthCheck } = require('./src/config/database');
+const { handleWebhookUpdate } = require('./src/bot/telegram');
 
 const app = express();
 const port = Number(process.env.PORT) || 8080;
@@ -23,6 +24,21 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+
+// Telegram gửi thông tin nhóm về webhook này khi bot được thêm vào nhóm.
+app.post('/telegram/webhook', async (req, res) => {
+  try {
+    await handleWebhookUpdate(
+      req.body,
+      req.get('x-telegram-bot-api-secret-token') || ''
+    );
+    res.sendStatus(200);
+  } catch (error) {
+    console.error('TELEGRAM WEBHOOK ERROR:', error);
+    res.status(error.statusCode || 500).json({ success: false });
+  }
+});
 
 // Trang chính
 app.get('/', (_req, res) => {

@@ -1,52 +1,58 @@
 <%- include('partials/header') %>
-<section class="page-header">
-  <div>
-    <h2>Nhân viên - <%= group.name %></h2>
-    <p>Quản lý danh sách nhân viên và mức lương ngày.</p>
+
+<section class="page-shell">
+  <div class="group-header-card compact">
+    <div>
+      <span class="eyebrow">LƯƠNG</span>
+      <h1>Nhân viên - <%= group.name %></h1>
+      <p>Thiết lập tên phụ và phần trăm doanh thu.</p>
+    </div>
+    <a class="button button-light" href="/admin/groups/<%= group.id %>">Quay lại nhóm</a>
   </div>
-  <a class="button secondary" href="/admin/groups/<%= group.id %>">Quay lại nhóm</a>
+
+  <nav class="section-tabs" aria-label="Chức năng nhóm">
+    <a href="/admin/groups/<%= group.id %>">Thu chi</a>
+    <a class="active" href="/admin/groups/<%= group.id %>/employees">Lương</a>
+    <a href="/admin/groups/<%= group.id %>#group-settings">Cài đặt nhóm</a>
+  </nav>
+
+  <section class="two-column-layout">
+    <article class="content-card form-card">
+      <div class="card-heading"><div><h2>Thêm nhân viên</h2><p>Tên phụ sẽ hiển thị trong ngoặc, ví dụ ACB.</p></div></div>
+      <form method="post" action="/admin/groups/<%= group.id %>/employees" class="form-stack">
+        <label><span>Tên nhân viên</span><input type="text" name="name" required></label>
+        <label><span>Tên phụ</span><input type="text" name="role" placeholder="Ví dụ: ACB"></label>
+        <label>
+          <span>Phần trăm doanh thu</span>
+          <div class="input-suffix">
+            <input type="number" name="revenue_percent" min="0" max="100" step="0.01" value="0" required>
+            <span>%</span>
+          </div>
+        </label>
+        <button class="button button-primary button-full" type="submit">Thêm nhân viên</button>
+      </form>
+    </article>
+
+    <article class="content-card">
+      <div class="card-heading"><div><h2>Danh sách nhân viên</h2><p><%= employees.length %> nhân viên.</p></div></div>
+      <% if (!employees.length) { %>
+        <div class="empty-state">Chưa có nhân viên.</div>
+      <% } else { %>
+        <div class="employee-list">
+          <% employees.forEach((employee) => { %>
+            <a href="/admin/employees/<%= employee.id %>/salary" class="employee-item">
+              <span class="employee-avatar"><%= String(employee.name).charAt(0).toUpperCase() %></span>
+              <span>
+                <strong><%= employee.name %><%= employee.role ? ` (${employee.role})` : '' %></strong>
+                <small>Phần trăm doanh thu: <%= formatPercent(employee.revenue_percent) %>%</small>
+              </span>
+              <span>›</span>
+            </a>
+          <% }) %>
+        </div>
+      <% } %>
+    </article>
+  </section>
 </section>
 
-<section class="grid two-columns">
-  <article class="card">
-    <h3>Thêm nhân viên</h3>
-    <form method="post" action="/admin/groups/<%= group.id %>/employees" class="stack">
-      <label>
-        Tên nhân viên
-        <input type="text" name="name" required />
-      </label>
-      <label>
-        Vai trò
-        <input type="text" name="role" placeholder="VD: Thu ngân" />
-      </label>
-      <label>
-        Lương ngày
-        <input type="number" name="daily_rate" min="0" step="1000" value="0" required />
-      </label>
-      <button class="button" type="submit">Thêm nhân viên</button>
-    </form>
-  </article>
-
-  <article class="card">
-    <h3>Danh sách nhân viên</h3>
-    <% if (!employees.length) { %>
-      <p>Chưa có nhân viên.</p>
-    <% } else { %>
-      <div class="list compact">
-        <% employees.forEach((employee) => { %>
-          <a class="list-item" href="/admin/employees/<%= employee.id %>/salary">
-            <div>
-              <strong><%= employee.name %></strong>
-              <small><%= employee.role || 'Chưa có vai trò' %></small>
-            </div>
-            <div class="meta">
-              <span><%= formatCurrency(employee.daily_rate) %>/ngày</span>
-              <span><%= employee.active ? 'Đang làm' : 'Ngừng' %></span>
-            </div>
-          </a>
-        <% }) %>
-      </div>
-    <% } %>
-  </article>
-</section>
 <%- include('partials/footer') %>
